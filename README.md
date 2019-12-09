@@ -1,4 +1,4 @@
-# Python3.6 Version of Rocky
+# Python3.7 Version of Rocky
 
 ## What is Rocky
 
