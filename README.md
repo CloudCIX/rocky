@@ -2,12 +2,15 @@
 
 ## What is Rocky
 
-Rocky is a CLI based management tool for CloudCIX. 
+Rocky is a CLI based management tool for CloudCIX. Rocky is designed to operate in an out of band (OOB) network, serarated from other networks. Rocky's purpose is to facilitate monitoring, testing, debug and recovery. By convention, Rocky uses OOB addresses that are IPV4, RFC1918 addresses in the form 10.S.R.U/16 where...
+* S represents the SRXPod
+* R represents the Rack
+* U represents the U location in the Rack
 
 ## How to run
 
 * First clone the repo.
-^ Next cd rocky/.
+* Next cd rocky/.
 * Finally python3 rocky.py.
 
 ## Requirements
