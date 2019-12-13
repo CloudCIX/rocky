@@ -3,9 +3,11 @@
 ## What is Rocky
 
 Rocky is a CLI based management tool for CloudCIX. Rocky is designed to operate in an out of band (OOB) network, serarated from other networks. Rocky's purpose is to facilitate monitoring, testing, debug and recovery. By convention, Rocky uses OOB addresses that are IPV4, RFC1918 addresses in the form 10.S.R.U/16 where...
-* S represents the SRXPod
-* R represents the Rack
-* U represents the U location in the Rack
+
+*	S represents the Site Number. If you are taking a CloudCIX support contract you will be informed of the S octet to use. Otherwise, you can choose any number you wish between 0 and 255. Each Support Number represents a VPN tunnel used by the CloudCIX support centre to reach the site.
+*	R represents the Rack. It can be any number from 1 to 255. If you have a multi-rack SRXPod then it is recommended to number them from 1 upwards sequentially. If you have a site with multiple SRXPods then different R numbers must be used. The R number must be unique within a Site.
+*	U represents the U location within the Rack of the device.
+
 
 ## How to run
 
