@@ -11,9 +11,12 @@ Rocky is a CLI based management tool for CloudCIX. Rocky is designed to operate 
 
 ## How to run
 
-* First clone the repo.
-* Next cd rocky/.
-* Finally python3 rocky.py.
+* First clone the GitHub repo
+* Generate an SSH key pair
+  * In rocky/data/settings.json file, add SSH public key to the key 'ROCKY_RSA'
+* Next cd rocky/
+* Run python3 rocky.py
+
 
 ## Requirements
 
