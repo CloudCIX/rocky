@@ -1,6 +1,6 @@
-#  #######################################################################
-#  This file needs to be modified and renamed settings.py before use.  #
-#  ######################################################################
+#  ########################################################################################
+#  IMPORTANT: This file should be  renamed settings.py and then modified and before use.  #
+#  ########################################################################################
 
 
 #  Rocky Version
@@ -10,12 +10,13 @@ VERSION = "0.2.0"
 ROUTER_NAME_SERVERS = ["91.103.0.1", "91.103.0.2", "8.8.8.8", "2a02:2078:cb01::2"]
 
 #  Public Keys
-# These Keys allow Rocky to change the network configuration on the SRX Routers 
+# These keys allow Rocky to log in to the SRX Router(s) to update the network configuration 
+# 
 ROCKY_RSA = "Place Rocky's public key here"
 
 #  Managed Cloud Infrastructure
-# One instance of Rocky can manage many Clouds and each Cloud can have many regions.
-# This configuration describes the Cloud infrastructure managed by this instance of Rocky.
+# One instance of Rocky can manage multiple clouds and each cloud will consist of one or more regions.
+# This configuration describes the cloud infrastructure managed by this instance of Rocky.
 
 clouds  = [
     # First Cloud ...
@@ -57,7 +58,7 @@ clouds  = [
         ],
         
         # SRX settings
-        # SSH Keys allow Robots in each region to configure local SRX Routers. 
+        # SSH Keys allow Robots in each region to configure 'their' local SRX Routers. 
         'ROBOT_RSA': "All instances of Robot in a Cloud have the same key pair. Place the public key here ",
         
         # Inbound Access list
