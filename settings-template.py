@@ -1,5 +1,5 @@
 #  ########################################################################################
-#  IMPORTANT: This file should be  renamed settings.py and then modified and before use.  #
+#  IMPORTANT: This file should be renamed settings.py and then modified before use.       #
 #  ########################################################################################
 
 
