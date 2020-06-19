@@ -10,34 +10,33 @@ Rocky is designed to operate in an out of band (OOB) network, serarated from oth
 *	R represents the Rack. It can be any number from 1 to 255. If you have a multi-rack SRXPod then it is recommended to number them from 1 upwards sequentially. If you have a site with multiple SRXPods then different R numbers must be used. The R number must be unique within a Site.
 *	U represents the U location within the Rack of the device.
 
-
 ## How to run
 
 * First clone the GitHub repo
 * Generate an SSH key pair
   * In rocky/data/settings.json file, add SSH public key to the key 'ROCKY_RSA'
-* Next cd rocky/
-* Run python3 rocky.py
-
+* Next `cd rocky/`
+* Run `python3 rocky.py`
 
 ## Requirements
 
-apt-get install nmap
+* Run `pip3 install -r requirements.txt`
 
 ## How to use
 
-* Type help at the command line
-* Type help <command> to get help on a particular command
+* Type `help` at the command line
+* Type `help <command>` to get help on a particular command
 * Press Return to rerun the previous command
 * Use Tab to auto complete a command
 
 ## Adding Commands
 
-* First create a file named command_name.py in the commands directory, rocky/commands/*command_name.py*.
-* Then create a class within that file called Command_name.
-* Now add a def run(self): method to that class.
-* Next go to the rocky/command.py and add a method to CmdParse called
-* def do_command_name(self, line):.
-* Now add a docstring to the def do_command_name(self, line): to act as a help for the command.
-* Then add Command_name().run() to the method above.
-* Finally go back to rocky/commands/*command_name.py* and create methods that will operate the intended command.
+* First create a file named *command_name.py* in the commands directory, `rocky/commands/*command_name.py*`.
+* Then create a class within that file called **Command_name**.
+* Now add a `def run(self):` method to that class.
+* Next go to the `rocky/command.py` and add a method to **CmdParse** called
+  `def do_command_name(self, line):`.
+
+* Now add a docstring to the `def do_command_name(self, line):` to act as a help for the command.
+* Then add `Command_name().run()` to the method above.
+* Finally go back to `rocky/commands/*command_name.py*` and create methods that will operate the intended command.
