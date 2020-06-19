@@ -1,0 +1,10 @@
+cloudcix
+influxdb
+jinja2
+junos-eznc
+lxml
+netaddr
+paramiko>=2.5.0
+sh
+simplejson
+xmltodict
