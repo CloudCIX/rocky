@@ -4,7 +4,7 @@
 
 
 #  Rocky Version
-VERSION = '0.3.0'
+VERSION = '0.3.1'
 
 # Path to file containing hostnames, ip addresses and credentials for monitoring
 HOSTS = ''

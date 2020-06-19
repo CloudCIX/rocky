@@ -1,0 +1,19 @@
+{
+    "cisco_hosts": [
+        {"host_name": "cisco_device", "username": "admin", "ip": "10.1.0.1"}
+    ],
+    
+    "juniper_hosts": [
+        {"host_name": "qfx1", "username": "administrator", "ip": "192.168.2.1"},
+        {"host_name": "router1", "username": "administrator", "ip": "192.168.0.1"},
+        {"host_name": "srx1", "username": "administrator", "ip": "192.168.1.1"}
+    ],
+
+    "paloalto_hosts": [
+        {"host_name": "PaloAlto1", "username": "administrator", "ip": "172.0.0.1"}
+    ],
+
+    "rocky_hosts": [
+        {"host_name": "someotherdevice", "username": "rocky", "ip": "10.0.0.1"}
+    ]
+}

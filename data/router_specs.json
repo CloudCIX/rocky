@@ -1,0 +1,109 @@
+{
+  "routers": {
+    "SRX300": [
+      {
+        "name": "ge-0/0/0",
+        "function": "Floating",
+        "port_configs": []
+      },
+      {
+        "name": "ge-0/0/1",
+        "function": "Private"
+      },
+      {
+        "name": "ge-0/0/2",
+        "function": "Management",
+        "port_configs": []
+      },
+      {
+        "name": "ge-0/0/3",
+        "function": "OOB",
+        "port_configs": []
+      }
+    ],
+    "SRX345-Copper": [
+      {
+        "name": "ge-0/0/4",
+        "function": "Floating",
+        "port_configs": []
+      },
+      {
+        "name": "ge-0/0/5",
+        "function": "Private"
+      },
+      {
+        "name": "ge-0/0/6",
+        "function": "Management",
+        "port_configs": []
+      },
+      {
+        "name": "fxp0",
+        "function": "OOB",
+        "port_configs": []
+      }
+    ],
+    "SRX345-Fibre": [
+      {
+        "name": "ge-0/0/8",
+        "function": "Floating",
+        "port_configs": []
+      },
+      {
+        "name": "ge-0/0/9",
+        "function": "Private"
+      },
+      {
+        "name": "ge-0/0/10",
+        "function": "Management",
+        "port_configs": []
+      },
+      {
+        "name": "fxp0",
+        "function": "OOB",
+        "port_configs": []
+      }
+    ],
+    "SRX4100": [
+      {
+        "name": "xe-0/0/0",
+        "function": "Floating",
+        "port_configs": []
+      },
+      {
+        "name": "xe-0/0/1",
+        "function": "Private"
+      },
+      {
+        "name": "xe-0/0/2",
+        "function": "Management",
+        "port_configs": []
+      },
+      {
+        "name": "fxp0",
+        "function": "OOB",
+        "port_configs": []
+      }
+    ],
+    "SRX4200": [
+      {
+        "name": "xe-0/0/0",
+        "function": "Floating",
+        "port_configs": []
+      },
+      {
+        "name": "xe-0/0/1",
+        "function": "Private"
+      },
+      {
+        "name": "xe-0/0/2",
+        "function": "Management",
+        "port_configs": []
+      },
+      {
+        "name": "fxp0",
+        "function": "OOB",
+        "port_configs": []
+      }
+    ]
+  }
+}
