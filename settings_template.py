@@ -4,10 +4,13 @@
 
 
 #  Rocky Version
-VERSION = '0.3.1'
+VERSION = '0.3.2'
 
-# Path to file containing hostnames, ip addresses and credentials for monitoring
-HOSTS = ''
+# Path to json file containing hostnames, ip addresses and credentials for monitoring
+HOSTS = 'file.json'
+
+# Path to where ports files will be saved
+PORTS_PATH = 'path/ports/'
 
 #  DNS Name Servers - List of stringed DNS IPs
 ROUTER_NAME_SERVERS = ['8.8.8.8', '1.1.1.1']
@@ -18,8 +21,7 @@ ROUTER_NAME_SERVERS = ['8.8.8.8', '1.1.1.1']
 ROCKY_RSA = ''
 
 # Network Device Repository Path
-# Path to Network Device Config repository
-DEVICE_CONFIG_PATH = ''
+DEVICE_CONFIG_PATH = 'path/repo/'
 
 #  Managed Cloud Infrastructure
 # One instance of Rocky can manage multiple clouds and each cloud will consist of one or more regions.

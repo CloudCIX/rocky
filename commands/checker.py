@@ -12,6 +12,7 @@ from bin.utils import (
     error,
     line_break,
 )
+import settings
 
 
 class Checker(Hosts):
@@ -94,7 +95,7 @@ class Checker(Hosts):
                     # ports dir is missing so it throws error
                     learned_device = []
 
-                    filename = f'data_hosts/ports/{host["host_name"]}.json'
+                    filename = f'{settings.PORT_PATH}{host["host_name"]}.json'
 
                     with open(filename, 'r') as port_json:
 
@@ -245,7 +246,7 @@ class Checker(Hosts):
                     #  if a new device is added but its learned json file from
                     # ports dir is missing so it throws error
                     learned_device = []
-                    filename = f'data_hosts/ports/{host["host_name"]}.json'
+                    filename = f'{settings.PORT_PATH}{host["host_name"]}.json'
 
                     with open(filename, 'r') as port_json:
 

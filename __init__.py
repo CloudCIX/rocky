@@ -5,4 +5,4 @@ Rocky is designed to operate in an out of band (OOB) network, serarated from oth
 Rocky's purpose is to facilitate monitoring, testing, debug and recovery
 """
 
-__version__ = '0.3.1'
+__version__ = '0.3.2'
