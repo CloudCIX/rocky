@@ -63,7 +63,7 @@ class Learner(Hosts):
                 parsed_dict = parsed_dict['interface-information']
                 parsed_list = parsed_dict['physical-interface']
 
-                with open(f'{settings.PORT_PATH}{host["host_name"]}.json', 'w+') as file:
+                with open(f'{settings.PORTS_PATH}{host["host_name"]}.json', 'w+') as file:
 
                     for item in parsed_list:
 
@@ -76,7 +76,7 @@ class Learner(Hosts):
 
                         file.write(f'{json.dumps(item)}\n')
 
-                print(f'{settings.PORT_PATH}{host["host_name"]}.json saved')
+                print(f'{settings.PORTS_PATH}{host["host_name"]}.json saved')
                 line_break()
 
             except Exception as err:
@@ -118,7 +118,7 @@ class Learner(Hosts):
                 parsed_list = parsed_dict['physical-interface']
                 # Storing port properties
 
-                with open(f'{settings.PORT_PATH}{host["host_name"]}.json', 'w+') as file:
+                with open(f'{settings.PORTS_PATH}{host["host_name"]}.json', 'w+') as file:
 
                     for item in parsed_list:
                         # If logical interfaces, delete them.
@@ -131,7 +131,7 @@ class Learner(Hosts):
                         # each column
                         file.write(f'{json.dumps(item)}\n')
 
-                print(f'{settings.PORT_PATH}{host["host_name"]}.json saved')
+                print(f'{settings.PORTS_PATH}{host["host_name"]}.json saved')
                 line_break()
 
             except Exception as err:

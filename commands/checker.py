@@ -95,7 +95,7 @@ class Checker(Hosts):
                     # ports dir is missing so it throws error
                     learned_device = []
 
-                    filename = f'{settings.PORT_PATH}{host["host_name"]}.json'
+                    filename = f'{settings.PORTS_PATH}{host["host_name"]}.json'
 
                     with open(filename, 'r') as port_json:
 
@@ -246,7 +246,7 @@ class Checker(Hosts):
                     #  if a new device is added but its learned json file from
                     # ports dir is missing so it throws error
                     learned_device = []
-                    filename = f'{settings.PORT_PATH}{host["host_name"]}.json'
+                    filename = f'{settings.PORTS_PATH}{host["host_name"]}.json'
 
                     with open(filename, 'r') as port_json:
 

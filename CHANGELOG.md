@@ -1,6 +1,9 @@
 # CHANGELOG
 Keep track of changes made for each version 
 
+## 0.3.3
+- Minor bug fixes
+
 ## 0.3.2
 - Add `PORTS_PATH` variable to settings file
 
