@@ -152,6 +152,67 @@ class CmdParse(cmd.Cmd):
         """
         Use (colour_cmd)RouterScrub (colour_clear)to initialise an SRX router in preparation
         for installation in a CloudCIX region. The existing configuration will be erased.
+        Pre-requirements to run router_scrub:
+        1. Router must be pre-configured with rocky user and OOB port.
+           - Complete guide is available in CloudCIX solution design guide
+        2. Find the settings_template.py file in rocky folder and modify the following:
+           a. Copy the settings_template file to settings.py and never delete the file.
+           b. Add all requested variable values such as RSA keys, cloud details, regions details like
+             -ipv4 link subnet (only one /31 subnet optional) if the network is routed otherwise not necessary if gated
+             network.
+               eg 91.103.0.4/31(is defined on internet) then 91.103.0.5/31 is defined on router so
+                 in settings file it will be:
+                  {
+                     'address_range': '91.103.0.5/31',
+                     'gateway': '91.103.0.4'
+                 }
+             -ipv4 pod subnets (a minimum of /27 subnets) not necessary if link subnet is defined.
+               otherwise define as: eg 91.103.0.25/27 and 91.103.0.25 is gateway defined on internet. then
+               in settings file it will be:
+                 {
+                     'address_range': '91.103.0.254/27',  #  better use the last available ip to define on the router.
+                     'gateway': '91.103.0.25'
+                 }
+             -ipv6 link subnet (only one /126 subnet must)
+               eg 2a02:2078::16c/126 and gateway 2a02:2078::16d defined on internet then
+               in settings file it will be:
+                 {
+                      'address_range': '2a02:2078::16e/126',
+                      'gateway': '2aa02:2078::16d',
+                 }
+             -ipv6 pod subnet (a minimum of /48 subnet must)
+               eg 2a02:2078:3::/48
+               in settings file it will be a /64 subnet:
+                 {
+                      'address_range': '2a02:2078:3::/64',
+                 }
+           c. Firewall rules of Management network:
+             - A firewall rule lets the access from source address to destination address for a given port and protocol.
+               eg.
+               {
+                'source_address': '91.103.0.30',
+                'destination_address': 'any',
+                'port': '10050-10051',
+                'protocol': 'tcp',
+                'description': 'hallmonitor_ipv4',
+               },
+               Notes:
+                   1. source address must be a valid ip address or 'any'
+                   2. destination address must be a valid ipv6 address of ipv6 region subnets management network
+                   (2a02:2078:3::/64 for above ipv6 region subnet)
+                   3. port value in range [1-65536]can be
+                      - single value, eg. 22
+                      - range , eg. 10050-10051
+                      - 'any'
+                   4. protocol can be 'tcp'/'udp'
+             - It consists of two types, 1. MAP_ACCESS_LIST 2. COP_ACCESS_LIST
+               MAP_ACCESS_LIST:
+                 Addresses from MAP(Monitoring and Provisioning) pods to gain access on Management network,
+                 these are same for all the pod routers those are controlled by that MAP.
+               COP_ACCESS_LIST:
+                 Address from COP (CloudCIX Orchestration Platform) pod to gain access on Management network,
+                 these are same for all the pod routers those are controlled by that COP.
+
         """
         RouterScrub().run()
 

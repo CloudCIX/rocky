@@ -16,16 +16,25 @@ set system login user rocky authentication ssh-rsa "{{ rocky_rsa}}"
 set system login user robot uid 2002
 set system login user robot class super-user
 set system login user robot authentication ssh-rsa "{{ robot_rsa }}"
-{# -- user {{ ROUTER_USER }} -- #}
-set system login class {{ ROUTER_USER }} permissions shell
-set system login class {{ ROUTER_USER }} permissions view
-set system login class {{ ROUTER_USER }} allow-commands "(show .*)|(match .*)|(display .*)|(no-more)|(start .*)"
-set system login class {{ ROUTER_USER }} deny-commands "(clear .*)|(file .*)|(help .*)|(load .*)|(monitor .*)|(op .*)|(request .*)|(save .*)|(set .*)|({{ ROUTER_USER }} .*)"
-set system login class {{ ROUTER_USER }} deny-configuration .*
-set system login user {{ ROUTER_USER }} uid 2003
-set system login user {{ ROUTER_USER }} class {{ ROUTER_USER }}
-set system login user {{ ROUTER_USER }} authentication encrypted-password {{ ROUTER_PASSWORD }}
+{# -- Administrator user -- #}
+set system login user administrator uid 2003
+set system login user administrator class super-user
+set system login user administrator authentication encrypted-password "{{ administrator_encryp_pass }}"
+{# -- user api-server -- #}
+set system login class api-server permissions shell
+set system login class api-server permissions view
+set system login class api-server allow-commands "(show .*)|(match .*)|(display .*)|(no-more)|(start .*)"
+set system login class api-server deny-commands "(clear .*)|(file .*)|(help .*)|(load .*)|(monitor .*)|(op .*)|(request .*)|(save .*)|(set .*)|(api-server .*)"
+set system login class api-server deny-configuration .*
+set system login user api-server uid 2004
+set system login user api-server class api-server
+set system login user api-server authentication encrypted-password {{ api_user }}
+{# -- remote user for radius server -- #}
+set system login user remote full-name "default remote access template"
+set system login user remote uid 2005
+set system login user remote class super-user
 {# ----System services---- #}
+set system time-zone UTC
 set system services ssh
 set system services netconf ssh connection-limit 250 rate-limit 250
 set system commit persist-groups-inheritance
@@ -35,8 +44,6 @@ set security policies global policy global-deny-all-policy match source-address 
 set security policies global policy global-deny-all-policy match destination-address any
 set security policies global policy global-deny-all-policy match application any
 set security policies global policy global-deny-all-policy then deny
-set security policies global policy global-deny-all-policy then log session-init
-set security policies global policy global-deny-all-policy then count
 set security policies default-policy deny-all
 set security forwarding-options family inet6 mode flow-based
 set security log mode event
@@ -62,10 +69,10 @@ set security dynamic-address address-name RoboSOC.Blocklist_Address description 
 set security dynamic-address address-name RoboSOC.Blocklist_Address profile feed-name IPBlocklistFeed
 {# inbound common policy #}
 set groups PUBLIC-VRF security policies from-zone PUBLIC to-zone <*> policy RoboSOC_Blocklist_In_Block match source-address RoboSOC.Blocklist_Address destination-address any application any
-set groups PUBLIC-VRF security policies from-zone PUBLIC to-zone <*> policy RoboSOC_Blocklist_In_Block then deny log session-init
+set groups PUBLIC-VRF security policies from-zone PUBLIC to-zone <*> policy RoboSOC_Blocklist_In_Block then deny
 {# outbound common policy #}
 set groups VRF-PUBLIC security policies from-zone <*> to-zone PUBLIC policy RoboSOC_Blocklist_Out_Block match source-address any destination-address RoboSOC.Blocklist_Address application any
-set groups VRF-PUBLIC security policies from-zone <*> to-zone PUBLIC policy RoboSOC_Blocklist_Out_Block then deny log session-init
+set groups VRF-PUBLIC security policies from-zone <*> to-zone PUBLIC policy RoboSOC_Blocklist_Out_Block then deny
 {# ==================PORT CONFIGURATION============================== #}
 {% for port in ports %}
 {# ----------------------------------------------------------PUBLIC---------------------------------------------------------- #}
@@ -112,7 +119,7 @@ set groups mgmt interfaces {{ port['name'] }} unit 0 description management
 {% for port_config in port['port_configs'] %}
 set groups mgmt interfaces {{ port['name'] }} unit 0 family {{ port_config['type'] }} address {{ port_config['ip'] }}/{{ port_config['mask'] }}
 {% if port_config['type'] == 'inet' %}
-set groups mgmt routing-instances MGMT routing-options static route 0.0.0.0/0 next-hop {{ port_config['gateway'] }}
+set groups mgmt routing-instances MGMT routing-options static route 0.0.0.0/0 next-table inet.0
 {% elif port_config['type'] == 'inet6' %}
 set groups mgmt routing-instances MGMT routing-options rib MGMT.{{ port_config['type'] }}.0 static route ::/0 next-hop {{ port_config['gateway'] }}
 {% endif %}
@@ -126,24 +133,41 @@ set groups mgmt routing-instances MGMT instance-type virtual-router
 set groups mgmt routing-instances MGMT interface {{ port['name'] }}.0
 set groups mgmt routing-instances MGMT routing-options interface-routes rib-group inet6 Mgmt.To.Public
 {# security policies #}
+{# common pingv6 allow rule #}
+set groups mgmt-sp-inbound security policies from-zone PUBLIC to-zone mgmt policy mgmt-inbound-pingv6 match source-address any destination-address any application junos-pingv6
+set groups mgmt-sp-inbound security policies from-zone PUBLIC to-zone mgmt policy mgmt-inbound-pingv6 then permit
 {% for address in mgmt_access_addresses %}
-set groups mgmt security address-book global address mgmt-{{ address[2] }} description {{ address[1] }}
-set groups mgmt security address-book global address mgmt-{{ address[2] }} {{ address[0] }}
-set groups mgmt security address-book global address-set mgmt-access-addresses address mgmt-{{ address[2] }}
+{# -- inbound -- #}
+{% if address['source_address'] != 'any' %}
+set groups mgmt security address-book global address mgmt-{{ address['source_address_name'] }} description {{ address['description'] }}
+set groups mgmt security address-book global address mgmt-{{ address['source_address_name'] }} {{ address['source_address'] }}
+set groups mgmt-sp-inbound security policies from-zone PUBLIC to-zone mgmt policy mgmt-inbound-{{ loop.index0 }} match source-address mgmt-{{ address['source_address_name'] }}
+{% else %}
+set groups mgmt-sp-inbound security policies from-zone PUBLIC to-zone mgmt policy mgmt-inbound-{{ loop.index0 }} match source-address any
+{% endif %}
+{% if address['destination_address'] != 'any' %}
+set groups mgmt security address-book global address mgmt-{{ address['destination_address_name'] }} {{ address['destination_address'] }}
+set groups mgmt-sp-inbound security policies from-zone PUBLIC to-zone mgmt policy mgmt-inbound-{{ loop.index0 }} match destination-address mgmt-{{ address['destination_address_name'] }}
+{% else %}
+set groups mgmt-sp-inbound security policies from-zone PUBLIC to-zone mgmt policy mgmt-inbound-{{ loop.index0 }} match destination-address any
+{% endif %}
+{% if address['port'] != 'any' and address['protocol'] != 'any' %}
+set applications application cloudcix-{{ address['protocol'] }}-{{ address['port'] }} protocol {{ address['protocol'] }} destination-port {{ address['port'] }}
+set groups mgmt-sp-inbound security policies from-zone PUBLIC to-zone mgmt policy mgmt-inbound-{{ loop.index0 }} match application cloudcix-{{ address['protocol'] }}-{{ address['port'] }}
+{% else %}
+set groups mgmt-sp-inbound security policies from-zone PUBLIC to-zone mgmt policy mgmt-inbound-{{ loop.index0 }} match application any
+{% endif %}
+set groups mgmt-sp-inbound security policies from-zone PUBLIC to-zone mgmt policy mgmt-inbound-{{ loop.index0 }} then permit
 {% endfor %}
 set groups mgmt security policies from-zone PUBLIC to-zone mgmt apply-groups PUBLIC-VRF
-set groups mgmt security policies from-zone PUBLIC to-zone mgmt policy mgmt-inbound-0 match source-address mgmt-access-addresses destination-address any application any
-set groups mgmt security policies from-zone PUBLIC to-zone mgmt policy mgmt-inbound-0 then permit
-set groups mgmt security policies from-zone PUBLIC to-zone mgmt policy mgmt-inbound-0 then log session-init
-{# ------- #}
+set groups mgmt security policies from-zone PUBLIC to-zone mgmt apply-groups mgmt-sp-inbound
+{# --outbound #}
 set groups mgmt security policies from-zone mgmt to-zone PUBLIC apply-groups VRF-PUBLIC
 set groups mgmt security policies from-zone mgmt to-zone PUBLIC policy mgmt-outbound-permit-all match source-address any destination-address any application any
 set groups mgmt security policies from-zone mgmt to-zone PUBLIC policy mgmt-outbound-permit-all then permit
-set groups mgmt security policies from-zone mgmt to-zone PUBLIC policy mgmt-outbound-permit-all then log session-init
-{# ------- #}
+{# --intrazone-- #}
 set groups mgmt security policies from-zone mgmt to-zone mgmt policy mgmt-intrazone-permit match source-address any destination-address any application any
 set groups mgmt security policies from-zone mgmt to-zone mgmt policy mgmt-intrazone-permit then permit
-set groups mgmt security policies from-zone mgmt to-zone mgmt policy mgmt-intrazone-permit then log session-init
 set apply-groups mgmt
 {% endif %}
 {#-------------------------------------------------------OOB----------------------------------------------------------------------- #}
@@ -159,7 +183,18 @@ set groups oob security zones security-zone OOB interfaces {{ port['name'] }}.0 
 {% for port_config in port['port_configs'] %}
 set groups oob interfaces {{ port['name'] }}.0 family inet address {{ port_config['ip'] }}/{{ port_config['mask'] }}
 set groups oob routing-options static route 10.0.0.0/8 next-hop {{ port_config['gateway'] }}
+{#  Radius Server #}
+set system authentication-order radius
+set system authentication-order password
+set system radius-server {{ radius_server_address }} port 1812
+set system radius-server {{ radius_server_address }} accounting-port 1813
+set system radius-server {{ radius_server_address }} secret {{ radius_server_secret }}
+set system radius-server {{ radius_server_address }} source-address {{ port_config['ip'] }}
 {% endfor %}
 set apply-groups oob
 {% endif %}
 {% endfor %}
+{# --------- snmp-------#}
+set snmp location {{ location }}
+set snmp contact "noc@cix.ie"
+set snmp community {{ name }} authorization read-only

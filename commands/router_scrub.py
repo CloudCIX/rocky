@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 import netaddr
 # local
 from bin import RouterMixin, utils
-import rocky
+import settings
 
 ADDRESS_NAME_SUB_PATTERN = re.compile(r'[\.\/:]')
 
@@ -43,8 +43,17 @@ class RouterScrub(RouterMixin):
             '\u2502' + (' ' * 5) + '(colour_clear)ALREADY in production'
             '(colour_cmd)' + (' ' * 4) + '\u2502')
         utils.colour_print(
-            '\u2502' + (' ' * 2) + '(colour_clear)will cause service outages'
-            '(colour_cmd)' + (' ' * 2) + '\u2502')
+            '\u2502' + (' ' * 2) + '(colour_clear)will cause service outages.'
+            '(colour_cmd)' + ' ' + '\u2502')
+        utils.colour_print(
+            '\u2502' + (' ' * 3) + '(colour_clear)Make sure you have read'
+            '(colour_cmd)' + (' ' * 4) + '\u2502')
+        utils.colour_print(
+            '\u2502' + (' ' * 4) + '(colour_clear)the "help" and updated'
+            '(colour_cmd)' + (' ' * 4) + '\u2502')
+        utils.colour_print(
+            '\u2502' + (' ' * 3) + '(colour_clear)settings file correctly.'
+            '(colour_cmd)' + (' ' * 3) + '\u2502')
         utils.colour_print(
             '\u2502' + (' ' * 5) + '(colour_clear)Press (colour_cmd)Y or y '
             '(colour_clear)to continue.(colour_cmd)' + '\u2502')
@@ -66,35 +75,176 @@ class RouterScrub(RouterMixin):
             utils.line_break()
             print()
 
-            # Management network is controlled by SRX routers and are firewall protected, so all inbound is blocked.
-            # An allow policy with the access list ips can enable the access to management network from outside world.
-            # Access list can be api servers, gitlab servers and etc, where the management hosts like Robot needs to
-            # communicate with these servers in access list.
-            access_addrs = rocky.SETTINGS['MGMT_ACCESS_LIST']
+            # loading settings data
+            utils.colour_print('Reading the settings file...')
+            # validating map_access_list
+            utils.colour_print('Validating MAP_ACCESS_LIST ...')
+            map_access_list = settings.MAP_ACCESS_LIST
+            for firewall in map_access_list:
+                self.validate_firewall(firewall)
+
+            clouds = settings.clouds
+            if clouds[0]['name'] in ['', None]:
+                utils.error(f'Invalid cloud name, Please edit the settings file correctly')
+                return
+            label = f'All available clouds in the settings file are:'
+            utils.colour_print(
+                '┌─────────────────────────────────────────────────┐',
+            )
+            utils.colour_print(f'│{label:^49}│')
+            utils.colour_print(
+                '├───────────┬─────────────────────────────────────┤',
+            )
+            utils.colour_print(
+                '│     id    │                 Name                │',
+            )
+            utils.colour_print(
+                '├───────────┼─────────────────────────────────────┤',
+            )
+            cloud_ids = []
+            for cloud in clouds:
+                cloud_ids.append(cloud['id'])
+                utils.colour_print(f'│{cloud["id"]:^11}│{cloud["name"]:^37}│')
+            utils.colour_print(
+                '└───────────┴─────────────────────────────────────┘',
+            )
+            cloud_id = input(
+                utils.colour('(colour_warning)Select the cloud by entering "id" of the cloud.(colour_clear): '),
+            )
+            if cloud_id not in cloud_ids:
+                utils.error('Invalid cloud id, exiting. Please try again with correct cloud id.')
+                return
+            the_cloud = None
+            for cloud in clouds:
+                if cloud['id'] == cloud_id:
+                    the_cloud = cloud
+            # validating the cloud settings
+            utils.colour_print('Validating COP_ACCESS_LIST ...')
+            cop_access_list = the_cloud['COP_ACCESS_LIST']
+            for firewall in cop_access_list:
+                self.validate_firewall(firewall)
+
+            pods = the_cloud['pods']
+            label = f'All available pods from the cloud #{the_cloud["name"]} are:'
+            utils.colour_print(
+                '┌───────────────────────────────────────────────────────────┐',
+            )
+            utils.colour_print(f'│{label:^59}│')
+            utils.colour_print(
+                '├───────────┬────────────────────────────────────┬──────────┤',
+            )
+            utils.colour_print(
+                '│     id    │                 Name               │   Type   │',
+            )
+            utils.colour_print(
+                '├───────────┼────────────────────────────────────┼──────────┤',
+            )
+            pod_ids = []
+            for pod in pods:
+                pod_ids.append(pod['id'])
+                utils.colour_print(f'│{pod["id"]:^11}│{pod["name"]:^36}│{pod["type"]:^10}│')
+            utils.colour_print(
+                '└───────────┴────────────────────────────────────┴──────────┘',
+            )
+            pod_id = input(
+                utils.colour('(colour_warning)Select the pod by entering "id" of the pod.(colour_clear):  '),
+            )
+            if pod_id not in pod_ids:
+                utils.error('Invalid pod id, exiting. Please try again with correct pod id.')
+                return
+            the_pod = None
+            for pod in pods:
+                if pod['id'] == pod_id:
+                    the_pod = pod
+
+            public_port_config = []
+            # validating the pod settings
+            utils.colour_print('validating IPv4_link_subnet...')
+            for subnet in the_pod['IPv4_link_subnet']:
+                if subnet['address_range'] != '':
+                    if not self.validate_address(subnet['address_range']):
+                        utils.error(f'Invalid address_range in IPv4_link_subnet #{subnet}')
+                        exit()
+                    if not self.validate_address(subnet['gateway']):
+                        utils.error(f'Invalid gateway in IPv4_link_subnet #{subnet}')
+                        exit()
+                    public_port_config.append(subnet)
+
+            utils.colour_print('validating IPv4_pod_subnets...')
+            for subnet in the_pod['IPv4_pod_subnets']:
+                if not self.validate_address(subnet['address_range']):
+                    utils.error(f'Invalid address_range in IPv4_pod_subnets #{subnet}')
+                    exit()
+                if not self.validate_address(subnet['gateway']):
+                    utils.error(f'Invalid gateway in IPv4_link_subnet #{subnet}')
+                    exit()
+                public_port_config.append(subnet)
+
+            utils.colour_print('validating IPv6_link_subnet...')
+            for subnet in the_pod['IPv6_link_subnet']:
+                if not self.validate_address(subnet['address_range']):
+                    utils.error(f'Invalid address_range in IPv6_link_subnet #{subnet}')
+                    exit()
+                if not self.validate_address(subnet['gateway']):
+                    utils.error(f'Invalid gateway in IPv6_link_subnet #{subnet}')
+                    exit()
+                public_port_config.append(subnet)
+
+            mgmt_port_config = []
+            utils.colour_print('validating IPv6_pod_subnets...')
+            for subnet in the_pod['IPv6_pod_subnets']:
+                if not self.validate_address(subnet['address_range']):
+                    utils.error(f'Invalid address_range in IPv6_pod_subnets #{subnet}')
+                    exit()
+                address = subnet['address_range'].split('/')
+                subnet['address_range'] = f'{address[0]}10:0:1/64'
+                subnet['gateway'] = f'{address[0]}10:0:1'
+                mgmt_port_config.append(subnet)
+
+            utils.colour_print('validating IPv4_RFC1918_subnets...')
+            for subnet in the_pod['IPv4_RFC1918_subnets']:
+                if not self.validate_address(subnet['address_range']):
+                    utils.error(f'Invalid address_range in IPv4_RFC1918_subnets #{subnet}')
+                    exit()
+                if not self.validate_address(subnet['gateway']):
+                    utils.error(f'Invalid gateway in IPv4_RFC1918_subnets #{subnet}')
+                    exit()
+                mgmt_port_config.append(subnet)
+
+            access_addrs = map_access_list + cop_access_list
             mgmt_access_addresses = []
-            for key in access_addrs:
+            for item in access_addrs:
                 # an address is defined with name in router, the name can be any unique so is taken from ip address
                 # itself by converting its non integers like '.' , '/', ':' to '-'.
-                key_pattern = ADDRESS_NAME_SUB_PATTERN.sub('-', access_addrs[key])
-                mgmt_access_addresses.append([access_addrs[key], key, key_pattern])
+                item['source_address_name'] = ADDRESS_NAME_SUB_PATTERN.sub('-', item['source_address'])
+                item['destination_address_name'] = ADDRESS_NAME_SUB_PATTERN.sub('-', item['destination_address'])
+                mgmt_access_addresses.append(item)
 
             template_data: Optional[Dict[str, Any]]
             template_data = {
-                'name_servers': rocky.SETTINGS['ROUTER_NAME_SERVERS'],
+                'name_servers': settings.ROUTER_NAME_SERVERS,
                 'mgmt_access_addresses': mgmt_access_addresses,
-                'robot_rsa': rocky.SETTINGS['ROBOT_RSA'],
-                'rocky_rsa': rocky.SETTINGS['ROCKY_RSA'],
+                'robot_rsa': settings.ROBOT_RSA,
+                'rocky_rsa': settings.ROCKY_RSA,
+                'administrator_encryp_pass': settings.ADMINISTRATOR_ENCRYP_PASS,
+                'api_user': settings.API_USER_PASS,
+                'radius_server_address': settings.RADIUS_SERVER_ADDRESS,
+                'radius_server_secret': settings.RADIUS_SERVER_SECRET,
+                'location': the_pod['location'],
+                'name': the_pod['name'],
             }
+            utils.line_break()
+            print()
 
             # Get the oob router
             utils.colour_print('(colour_prompt)Please enter correct OOB ip of the router to be scrubbed(colour_clear).')
             utils.colour_print('\r - e.g 10.S.R.U where S:site number; R:rack number; U:unit location')
-            utils.colour_print('\r - each must be in range 1-254')
+            utils.colour_print('\r - each must be in range 0-254')
             oob_ip = self.user_input_valid_address('')
             utils.line_break()
             print()
 
-            # sshing into router for router model
+            # SSHing into router for router model
             utils.colour_print('(colour_prompt)Fetching the router model...(colour_clear)')
             router_model = RouterScrub.router_model(oob_ip)
             if not router_model:
@@ -158,7 +308,6 @@ class RouterScrub(RouterMixin):
                 return
 
             # Collect the template data.
-            utils.colour_print('(colour_prompt)Please enter requested information correctly(colour_clear).\n')
             for port in template_data['ports']:
 
                 # oob is already taken
@@ -174,72 +323,29 @@ class RouterScrub(RouterMixin):
 
                 # Management
                 if port['function'] == 'Management':
-
-                    utils.colour_print('(colour_prompt)MANAGEMENT port configuration(colour_clear).\n')
-                    utils.colour_print(
-                        '(colour_prompt)Please give /48 (e.g "2a02:2078:3::/48") address range:(colour_clear)',
-                    )
-                    management = self.user_input_valid_address('')
-                    ip = f'{management.split("/")[0]}10:0:1'
-                    port['port_configs'].append(
-                        {
-                            'ip': ip,
-                            'mask': 64,
-                            'type': 'inet6',
-                            'gateway': ip,
-                        },
-                    )
-                    # Management private network 172.16.10.0/24
-                    port['port_configs'].append(
-                        {
-                            'ip': '172.16.10.1',
-                            'mask': 24,
-                            'type': 'inet',
-                            'gateway': '172.16.10.1',
-                        },
-                    )
-                    utils.line_break()
-                    print()
+                    for address in mgmt_port_config:
+                        ip = address['address_range'].split('/')
+                        port['port_configs'].append(
+                            {
+                                'ip': ip[0],
+                                'mask': ip[1],
+                                'type': 'inet6' if netaddr.IPAddress(ip[0]).version == 6 else 'inet',
+                                'gateway': address['gateway'],
+                            },
+                        )
 
                 # Public
                 if port['function'] == 'Floating':
-
-                    utils.colour_print('(colour_prompt)PUBLIC port configuration(colour_clear).\n')
-                    utils.colour_print('Please give a valid floating address range:(colour_clear)')
-                    utils.colour_print('- e.g "91.103.0.62/27"; "2a02:2078::148/126"(colour_clear)')
-                    more = True
-                    while more:
-
-                        floating = self.user_input_valid_address('Floating: ')
-                        gateway = self.user_input_valid_address('Gateway: ')
-
-                        if str(gateway) in netaddr.IPNetwork(floating):
-
-                            ip = floating.split('/')
-                            port['port_configs'].append(
-                                {
-                                    'ip': ip[0],
-                                    'mask': ip[1],
-                                    'type': 'inet6' if netaddr.IPAddress(ip[0]).version == 6 else 'inet',
-                                    'gateway': gateway,
-                                },
-                            )
-
-                            option = input(
-                                utils.colour(
-                                    '(colour_prompt)If you want to add address range, '
-                                    'enter y or Y otherwise any key to stop.:(colour_clear) ',
-                                ),
-                            )
-                            if option not in ['Y', 'y']:
-                                break
-                        else:
-                            utils.colour_print(
-                                f'(colour_warning)This {gateway} is not a valid gateway'
-                                f' of {floating}, try again.(colour_clear)',
-                            )
-                    utils.line_break()
-                    print()
+                    for address in public_port_config:
+                        ip = address['address_range'].split('/')
+                        port['port_configs'].append(
+                            {
+                                'ip': ip[0],
+                                'mask': ip[1],
+                                'type': 'inet6' if netaddr.IPAddress(ip[0]).version == 6 else 'inet',
+                                'gateway': address['gateway'],
+                            },
+                        )
 
             # All data check
             label = f'Router #{router_model} {oob_ip} ports and IPs'
@@ -324,3 +430,44 @@ class RouterScrub(RouterMixin):
             address = ''
 
         return address
+
+    @classmethod
+    def validate_firewall(cls, firewall):
+        """
+        takes a firewall rule dict with source address, destination address, port and protocol
+        :param firewall:
+        :return: nothing if everything is right otherwise fails gracefully
+        """
+        if 'source_address' not in firewall.keys():
+            utils.error(f'"source_address" is not defined for firewall # {firewall}')
+            exit()
+        if firewall['source_address'] == 'any':
+            pass
+        elif not cls.validate_address(firewall['source_address']):
+            utils.error(f'Invalid "source_address" for firewall # {firewall}')
+            exit()
+        if 'destination_address' not in firewall.keys():
+            utils.error(f'"destination_address" is not defined for firewall # {firewall}')
+            exit()
+        if firewall['destination_address'] == 'any':
+            pass
+        elif not cls.validate_address(firewall['destination_address']):
+            utils.error(f'Invalid "destination_address" for firewall # {firewall}')
+            exit()
+        if 'port' not in firewall.keys():
+            utils.error(f'"port" is not defined for firewall #{firewall}')
+            exit()
+        if firewall['port'] == 'any':
+            pass
+        else:
+            ports = firewall['port'].split('-')
+            for port in ports:
+                if int(port) not in range(65536):
+                    utils.error(f'Invalid port value # {port} of firewall #{firewall}, it must be in range 0 to 65536')
+                    exit()
+        if 'protocol' not in firewall.keys():
+            utils.error(f'"protocol" is not defined for firewall #{firewall}')
+            exit()
+        if firewall['protocol'] not in ['tcp', 'upd', 'any']:
+            utils.error(f'Invalid protocol for firewall #{firewall}, it can only be "tcp" or "udp", or "any".')
+            exit()
