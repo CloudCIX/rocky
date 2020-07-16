@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## 0.3.5
+- Minor bug fixes
+
 ## 0.3.4
 - Added `ADMINISTRATOR_ENCRYP_PASS`, `API_USER_PASS`, `RADIUS_SERVER_ADDRESS`, `RADIUS_SERVER_SECRET`,
   `MAP_ACCESS_LIST` to main settings in settings.py.

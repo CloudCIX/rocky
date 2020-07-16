@@ -4,7 +4,7 @@
 
 
 #  Rocky Version
-VERSION = '0.3.4'
+VERSION = '0.3.5'
 
 # Path to json file containing hostnames, ip addresses and credentials for monitoring
 HOSTS = 'file.json'
@@ -25,8 +25,8 @@ ROBOT_RSA = ''
 # Administrator encrypted password (sha256)
 ADMINISTRATOR_ENCRYP_PASS = ''
 
-# api user with limited access
-API_USER_PASS = 'Ap1S3rVIcE!1'
+# api-server user with limited access
+API_USER_PASS = ''
 
 # Radius server
 RADIUS_SERVER_ADDRESS = ''
